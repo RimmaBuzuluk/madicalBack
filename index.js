@@ -141,10 +141,13 @@ app.post('/user/login', async (req, res) => {
 			'secret123',
 			{ expiresIn: '30d' }
 		);
-		// const { passwordHash, ...userData } = user._doc;
+		const cart = await Cart.findOne({ user: '65e5ecaec3626d921b455711' });
+		console.log(user._id);
+		console.log(cart._id);
 
 		res.json({
 			...user._doc,
+			cartId: cart._id,
 			token,
 		});
 	} catch (err) {
@@ -237,6 +240,38 @@ app.get('/carts/:cartId/items', async (req, res) => {
 	} catch (error) {
 		console.log(error);
 		res.status(500).json({ message: 'Сталась помилка під час отримання товарів' });
+	}
+});
+
+app.put('/carts/:cartId/items/:itemId', async (req, res) => {
+	try {
+		const cartId = req.params.cartId;
+		const itemId = req.params.itemId;
+		const newQuantity = req.body.quantity; // Нова кількість елементів
+
+		const cart = await Cart.findById(cartId);
+		if (!cart) {
+			return res.status(404).send('Cart not found');
+		}
+
+		const cartItem = cart.items.find(item => item._id.toString() === itemId);
+		if (!cartItem) {
+			return res.status(404).send('Item not found in the cart');
+		}
+
+		cartItem.quantity = newQuantity;
+		cartItem.totalPrice = cartItem.preparation.preparationPrice * newQuantity;
+
+		// Оновлюємо загальну кількість і вартість корзини
+		cart.totalQuantity = cart.items.reduce((total, item) => total + item.quantity, 0);
+		cart.totalPrice = cart.items.reduce((total, item) => total + item.totalPrice, 0);
+
+		await cart.save();
+
+		res.status(200).send('Cart item quantity updated successfully');
+	} catch (error) {
+		console.log(error);
+		res.status(500).json({ message: 'Сталася помилка під час обробки запиту' });
 	}
 });
 
