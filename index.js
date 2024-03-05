@@ -73,7 +73,7 @@ app.get('/preparation/allItem', async (req, res) => {
 	}
 });
 
-app.post('/user/register', registerValidation, async (req, res) => {
+app.post('/user/register', async (req, res) => {
 	try {
 		const errors = validationResult(error);
 		if (!errors.isEmpty()) {
@@ -105,8 +105,11 @@ app.post('/user/register', registerValidation, async (req, res) => {
 			{ expiresIn: '30d' }
 		);
 
+		const cart = await Cart.findOne({ user: '65e5ecaec3626d921b455711' });
+
 		res.json({
 			...user._doc,
+			cartId: cart._id,
 			token,
 		});
 	} catch (err) {
@@ -143,8 +146,6 @@ app.post('/user/login', async (req, res) => {
 			{ expiresIn: '30d' }
 		);
 		const cart = await Cart.findOne({ user: '65e5ecaec3626d921b455711' });
-		console.log(user._id);
-		console.log(cart._id);
 
 		res.json({
 			...user._doc,
