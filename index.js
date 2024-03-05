@@ -10,6 +10,7 @@ import PreparationModel from './models/preparations.js';
 import UserModul from './models/user.js';
 import checkAuth from './utils/checkAuth.js';
 import Cart from './models/cart.js';
+import { Order } from './models/order.js';
 
 mongoose
 	.connect('mongodb+srv://rimmabuzuluk:18102000@cluster0.qf8hk1t.mongodb.net/medical')
@@ -236,42 +237,126 @@ app.get('/carts/:cartId/items', async (req, res) => {
 			return res.status(404).send('Cart not found');
 		}
 
-		res.json(cart.items);
+		res.json(cart);
 	} catch (error) {
 		console.log(error);
 		res.status(500).json({ message: 'Сталась помилка під час отримання товарів' });
 	}
 });
 
-app.put('/carts/:cartId/items/:itemId', async (req, res) => {
+app.delete('/carts/:cartId/items/:itemId', async (req, res) => {
 	try {
 		const cartId = req.params.cartId;
 		const itemId = req.params.itemId;
-		const newQuantity = req.body.quantity; // Нова кількість елементів
 
 		const cart = await Cart.findById(cartId);
 		if (!cart) {
 			return res.status(404).send('Cart not found');
 		}
 
-		const cartItem = cart.items.find(item => item._id.toString() === itemId);
-		if (!cartItem) {
-			return res.status(404).send('Item not found in the cart');
-		}
+		// Видаляємо елемент з масиву items за його _id
+		cart.items.pull(itemId);
 
-		cartItem.quantity = newQuantity;
-		cartItem.totalPrice = cartItem.preparation.preparationPrice * newQuantity;
-
-		// Оновлюємо загальну кількість і вартість корзини
+		// Обчислюємо нові значення totalQuantity та totalPrice
 		cart.totalQuantity = cart.items.reduce((total, item) => total + item.quantity, 0);
 		cart.totalPrice = cart.items.reduce((total, item) => total + item.totalPrice, 0);
 
+		// Зберігаємо зміни в базі даних
 		await cart.save();
 
-		res.status(200).send('Cart item quantity updated successfully');
+		// Відправляємо відповідь про успішне видалення елементу
+		res.status(200).send('Item removed from cart successfully');
 	} catch (error) {
 		console.log(error);
 		res.status(500).json({ message: 'Сталася помилка під час обробки запиту' });
+	}
+});
+
+app.post('/order/:cartId', async (req, res) => {
+	try {
+		const cartId = req.params.cartId;
+
+		const cart = await Cart.findById(cartId);
+		if (!cart) {
+			return res.status(404).send('Cart not found');
+		}
+
+		// Отримати ідентифікатор користувача з корзини
+		const userId = cart.user;
+
+		// Отримати всі дані користувача за його ідентифікатором
+		const user = await UserModul.findById(userId);
+
+		const newOrder = new Order({
+			// user: userId, // Передати ідентифікатор користувача
+			items: cart.items,
+			totalPrice: cart.totalPrice,
+			totalQuantity: cart.totalQuantity,
+			fullName: user.fullName,
+			email: user.email,
+			address: user.address,
+			number: user.number,
+		});
+
+		const savedOrder = await newOrder.save();
+
+		cart.items = [];
+		cart.totalPrice = 0;
+		cart.totalQuantity = 0;
+		await cart.save();
+
+		res.json(newOrder);
+	} catch (error) {
+		console.error('Помилка при створенні замовлення:', error);
+		throw error;
+	}
+});
+
+app.post('/order/:cartId', async (req, res) => {
+	try {
+		const cartId = req.params.cartId;
+
+		const cart = await Cart.findById(cartId);
+
+		if (!cart) {
+			return res.status(404).send('Cart not found');
+		}
+
+		const user = await UserModul.findById(cart.user);
+		console.log(user);
+
+		const newOrder = new order({
+			items: cart.items,
+			totalPrice: cart.totalPrice,
+			totalQuantity: cart.totalQuantity,
+			fullName: user.fullName,
+			email: user.email,
+			address: user.address,
+			number: user.number,
+		});
+
+		const savedOrder = await newOrder.save();
+
+		cart.items = [];
+		cart.totalPrice = 0;
+		cart.totalQuantity = 0;
+		await cart.save();
+
+		res.json(newOrder);
+		return savedOrder;
+	} catch (error) {
+		console.error('Помилка при створенні замовлення:', error);
+		throw error;
+	}
+});
+
+app.get('/orders', async (req, res) => {
+	try {
+		const orders = await order.find();
+		res.json(orders);
+	} catch (error) {
+		console.error('Помилка при отриманні замовлень:', error);
+		res.status(500).json({ message: 'Помилка при отриманні замовлень' });
 	}
 });
 
