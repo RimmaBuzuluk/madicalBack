@@ -11,9 +11,11 @@ import UserModul from './models/user.js';
 import checkAuth from './utils/checkAuth.js';
 import Cart from './models/cart.js';
 import { Order } from './models/order.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 mongoose
-	.connect('mongodb+srv://rimmabuzuluk:18102000@cluster0.qf8hk1t.mongodb.net/medical')
+	.connect(process.env.MONGODB_URI)
 	.then(() => console.log('DB OK'))
 	.catch(() => console.log('db Err'));
 
@@ -154,7 +156,7 @@ app.post('/user/login', async (req, res) => {
 			token,
 		});
 	} catch (err) {
-		return res.json({
+		return res.status(500).json({
 			message: 'Не вдалось авторизуватись3',
 		});
 	}
@@ -394,9 +396,11 @@ app.get('/orders', async (req, res) => {
 	}
 });
 
-app.listen(4444, err => {
+const PORT = process.env.PORT;
+
+app.listen(PORT, err => {
 	if (err) {
 		return console.log(err);
 	}
-	console.log('server ok');
+	console.log('server ok, work on port' + PORT);
 });
