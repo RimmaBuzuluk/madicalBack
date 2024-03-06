@@ -13,7 +13,7 @@ import Cart from './models/cart.js';
 import { Order } from './models/order.js';
 
 mongoose
-	.connect(process.env.MONGODB_URI)
+	.connect('mongodb+srv://rimmabuzuluk:18102000@cluster0.qf8hk1t.mongodb.net/medical')
 	.then(() => console.log('DB OK'))
 	.catch(() => console.log('db Err'));
 
