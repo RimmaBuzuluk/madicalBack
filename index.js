@@ -13,7 +13,7 @@ import Cart from './models/cart.js';
 import { Order } from './models/order.js';
 
 mongoose
-	.connect('mongodb+srv://rimmabuzuluk:18102000@cluster0.qf8hk1t.mongodb.net/medical')
+	.connect(process.env.MONGODB_URI)
 	.then(() => console.log('DB OK'))
 	.catch(() => console.log('db Err'));
 
@@ -105,7 +105,7 @@ app.post('/user/register', async (req, res) => {
 			{ expiresIn: '30d' }
 		);
 
-		const cart = await Cart.findOne({ user: '65e5ecaec3626d921b455711' });
+		const cart = await Cart.findOne({ user: user._id });
 
 		res.json({
 			...user._doc,
@@ -138,6 +138,7 @@ app.post('/user/login', async (req, res) => {
 			});
 		}
 
+		console.log(user);
 		const token = jwt.sign(
 			{
 				_id: user._id,
@@ -145,7 +146,7 @@ app.post('/user/login', async (req, res) => {
 			'secret123',
 			{ expiresIn: '30d' }
 		);
-		const cart = await Cart.findOne({ user: '65e5ecaec3626d921b455711' });
+		const cart = await Cart.findOne({ user: user._id });
 
 		res.json({
 			...user._doc,
